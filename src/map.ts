@@ -17,6 +17,15 @@ export class ObservableMap<K, V> extends Map<K, V> {
 		return this;
 	}
 
+	override has(key: K) {
+		if (effect) {
+			this.subscriptions.push({ effect, key });
+			trackedObservables.add(this);
+		}
+
+		return super.has(key);
+	}
+
 	override get(key: K) {
 		if (effect) {
 			this.subscriptions.push({ effect, key });
@@ -60,5 +69,20 @@ export class ObservableMap<K, V> extends Map<K, V> {
 	override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any) {
 		this.subscribe();
 		return super.forEach(callbackfn, thisArg);
+	}
+
+	override clear() {
+		super.clear();
+		if (isInAction) actions.add(this);
+		else notify(this);
+	}
+
+	override delete(key: K) {
+		const deleted = super.delete(key);
+		if (!deleted) return false;
+		this.changed[key as Key] = null;
+		if (isInAction) actions.add(this);
+		else notify(this);
+		return true;
 	}
 }
