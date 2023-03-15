@@ -6,6 +6,7 @@ export let effect: Function | undefined;
 export let isInAction = false;
 export let actions = new Set<Observable>();
 export let trackedObservables = new Set<Observable>();
+export const subscribeKey = "subscribe";
 
 export type Key = string | symbol;
 
@@ -32,6 +33,8 @@ export function observable<T extends object>(target: T): T {
 	return new Proxy(target, {
 		get(target: any, key: any) {
 			if (effect) {
+				// return a special function to subscribe to the observable
+				if (key === subscribeKey) return () => o.subscriptions.push({ effect: effect! });
 				o.subscriptions.push({ effect, key });
 				trackedObservables.add(o);
 			}
