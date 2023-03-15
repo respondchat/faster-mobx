@@ -14,11 +14,9 @@ To address this issue, the `faster-mobx` library has been developed, providing a
 -   [x] `reaction`
 -   [x] `runInAction` (with async support)
 -   [x] `observer` (React support)
--   [ ] `observable.map`
+-   [x] `observable.map`
 -   [ ] `computed`
 -   [ ] `action`
--   [ ] `configure`
--   [ ] `extendObservable`
 -   [ ] `toJS`
 -   [ ] `trace`
 
@@ -68,7 +66,7 @@ class User {
 
 ## Benchmark
 
-Benchmark was done using [benchmark.js](https://benchmarkjs.com/) on a 20x Core CPU @ 3.20GHz.
+Benchmark was done using [benchmark.js](https://benchmarkjs.com/) on a 3.20GHz CPU with one thread.
 
 | Function                       |     Mobx     | Faster Mobx | Speedup |
 | ------------------------------ | :----------: | :---------: | :-----: |
