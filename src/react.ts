@@ -1,14 +1,23 @@
-import { createElement, forwardRef, memo } from "react";
-import { autorun } from "./observable";
+import { ReactElement, useRef, useState } from "react";
+import { reaction } from "./observable";
 
-export function observer<T>(component: T) {
-	return memo(
-		forwardRef((props, ref) => {
-			let result: any;
-			autorun(() => {
-				result = createElement(component as any, { ...props, ref });
-			});
-			return result;
-		})
-	) as T;
+export function observer<T extends (...props: any[]) => JSX.Element>(component: T) {
+	return function observer(props: any) {
+		let result = useRef<any>();
+		let dispose = useRef<any>();
+		const forceUpdate = useState(0)[1];
+
+		if (dispose.current) dispose.current();
+
+		dispose.current = reaction(
+			() => {
+				result.current = component(props);
+			},
+			() => {
+				forceUpdate((x) => x + 1);
+			}
+		);
+
+		return result.current as ReactElement;
+	} as T;
 }
