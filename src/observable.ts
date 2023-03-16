@@ -1,7 +1,8 @@
 import { ObservableMap } from "./map";
 
-export const ObservableSymbol = Symbol("observable");
+export const ObservableSymbol = Symbol.for("observable");
 
+export let listener: Function | undefined;
 export let effect: Function | undefined;
 export let isInAction = false;
 export let actions = new Set<Observable>();
@@ -19,10 +20,11 @@ export type Observable = {
 export type Subscription = {
 	effect: Function;
 	key?: Key;
+	listener?: Function;
 };
 
-export function observable<T extends object>(target: T): T {
-	if (target instanceof Map) return new ObservableMap(target) as T;
+export function observable<T extends object>(target: T): T & { subscribe: Function } {
+	if (target instanceof Map) return new ObservableMap(target) as any;
 	const o = {
 		subscriptions: [],
 		target,
@@ -34,8 +36,8 @@ export function observable<T extends object>(target: T): T {
 		get(target: any, key: any) {
 			if (effect) {
 				// return a special function to subscribe to the observable
-				if (key === subscribeKey) return () => o.subscriptions.push({ effect: effect! });
-				o.subscriptions.push({ effect, key });
+				if (key === subscribeKey) return () => o.subscriptions.push({ effect: effect!, listener });
+				o.subscriptions.push({ effect, key, listener });
 				trackedObservables.add(o);
 			}
 
@@ -44,6 +46,7 @@ export function observable<T extends object>(target: T): T {
 		set(target: any, key: any, value: any) {
 			const previous = target[key];
 			if (previous === value) return true; // don't notify if value is the same
+			if (previous instanceof Date && value instanceof Date && previous.getTime() === value.getTime()) return true;
 
 			target[key] = value;
 
@@ -53,17 +56,16 @@ export function observable<T extends object>(target: T): T {
 
 			return true;
 		},
-	}) as T;
+	}) as any;
 }
 
 export const makeObservable = observable;
 
 export function reaction(listener: Function, callback: (newValue: any) => void) {
-	const observables = trackedObservables;
-	trackedObservables = new Set();
 	effect = callback;
 	listener();
-	effect = undefined;
+	const observables = [...trackedObservables];
+	trackedObservables.clear();
 
 	// dispose
 	return () => {
@@ -77,16 +79,19 @@ export function autorun(callback: () => void) {
 	return reaction(callback, callback);
 }
 
-let notifyEffects = new Set<Function>();
+const notifyEffects = new Set<Function>();
+const changed = new Set();
 
 export function notify(observable: Observable) {
 	if (!observable.subscriptions.length) return;
 	// notifyEffects prevents effects from being called multiple times
 	let error: any;
 	notifyEffects.clear();
+	changed.clear();
+	Object.keys(observable.changed).forEach(changed.add, changed);
 
 	observable.subscriptions.forEach((subscription) => {
-		if (subscription.key && !observable.changed[subscription.key!]) return;
+		if (subscription.key && !changed.has(subscription.key as any)) return;
 		if (notifyEffects.has(subscription.effect)) return;
 		notifyEffects.add(subscription.effect);
 

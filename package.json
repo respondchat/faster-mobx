@@ -7,7 +7,8 @@
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"benchmark": "nodemon src/benchmark.ts",
-		"start": "nodemon src/mobx.ts"
+		"start": "nodemon src/mobx.ts",
+		"react": "vite -c test/vite.config.ts"
 	},
 	"repository": {
 		"type": "git",
@@ -32,12 +33,16 @@
 		"@types/benchmark": "^2.1.2",
 		"@types/node": "^18.15.3",
 		"@types/react": "^18.0.28",
+		"@types/react-dom": "^18.0.11",
+		"@vitejs/plugin-react": "^3.1.0",
 		"benchmark": "^2.1.4",
 		"mobx": "^6.8.0",
 		"nodemon": "^2.0.21",
 		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
 		"ts-node": "^10.9.1",
-		"typescript": "^4.9.5"
+		"typescript": "^4.9.5",
+		"vite": "^4.2.0"
 	},
 	"peerDependencies": {
 		"mobx": "^6.8.0",

@@ -9,7 +9,7 @@ export class MobxObservableClass {
 	b = 1;
 
 	constructor() {
-		return mobx.observable.object(this, {
+		mobx.makeObservable(this, {
 			a: mobx.observable,
 			b: mobx.observable,
 		});
@@ -20,9 +20,15 @@ const test = new MobxObservableClass();
 console.log("test", test);
 
 function testObservable(x: any) {
-	const dispose = mobx.autorun(() => {
-		console.log("value", { a: x.a, b: x.b });
-	});
+	const dispose = mobx.reaction(
+		() => {
+			console.log("reaction", { a: x.a, b: x.b });
+			return x.a;
+		},
+		() => {
+			console.log("value", { a: x.a, b: x.b });
+		}
+	);
 
 	x.a++;
 	x.b++;

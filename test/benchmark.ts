@@ -1,11 +1,10 @@
 import * as mobx from "mobx";
 import benchmark from "benchmark";
-import { autorun, observable } from "./observable";
-import { MobxObservableClass } from "./mobx";
+import { autorun, observable } from "../src/observable";
 
 const suite = new benchmark.Suite();
 
-const benchmarkMobx = true;
+const benchmarkMobx = false;
 if (benchmarkMobx) {
 	class MobX1 {
 		@mobx.observable
@@ -170,8 +169,20 @@ class ObservableClass26 {
 }
 
 autorun(() => x.a);
+const test = {
+	a: undefined,
+};
 
 suite
+	.add("test", function () {
+		test["a"] = test["a"];
+	})
+	.add("test2", function () {
+		Object.hasOwn(test, "a");
+	})
+	.add("test3", function () {
+		test.hasOwnProperty("a");
+	})
 	.add("Faster observable", function () {
 		return observable({});
 	})

@@ -1,4 +1,4 @@
-import { ReactElement, useRef, useState } from "react";
+import { ReactElement, useEffect, useRef, useState } from "react";
 import { reaction } from "./observable";
 
 export function observer<T extends (...props: any[]) => JSX.Element>(component: T) {
@@ -17,6 +17,12 @@ export function observer<T extends (...props: any[]) => JSX.Element>(component: 
 				forceUpdate((x) => x + 1);
 			}
 		);
+
+		useEffect(() => {
+			return () => {
+				dispose?.current();
+			};
+		}, []);
 
 		return result.current as ReactElement;
 	} as T;

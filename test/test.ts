@@ -1,5 +1,5 @@
-import { ObservableMap } from "./map";
-import { autorun, makeObservable, observable } from "./observable";
+import { ObservableMap } from "../src/map";
+import { autorun, makeObservable, observable } from "../src/observable";
 
 class Test {
 	x = 1;
