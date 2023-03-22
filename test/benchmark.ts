@@ -174,14 +174,9 @@ const test = {
 };
 
 suite
-	.add("test", function () {
-		test["a"] = test["a"];
-	})
-	.add("test2", function () {
-		Object.hasOwn(test, "a");
-	})
-	.add("test3", function () {
-		test.hasOwnProperty("a");
+
+	.add("Faster set", function () {
+		x.a = i;
 	})
 	.add("Faster observable", function () {
 		return observable({});
@@ -197,9 +192,6 @@ suite
 	})
 	.add("Faster get", function () {
 		x.a;
-	})
-	.add("Faster set", function () {
-		x.a = i;
 	});
 
 suite

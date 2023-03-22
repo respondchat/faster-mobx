@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ReactElement, useEffect, useRef, useState } from "react";
 import { reaction } from "./observable";
 

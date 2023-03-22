@@ -1,4 +1,5 @@
 import { ObservableMap } from "./map";
+import { isSame } from "./util";
 
 export const ObservableSymbol = Symbol.for("observable");
 
@@ -46,7 +47,7 @@ export function observable<T extends object>(target: T): T & { subscribe: Functi
 		set(target: any, key: any, value: any) {
 			const previous = target[key];
 			if (previous === value) return true; // don't notify if value is the same
-			if (previous instanceof Date && value instanceof Date && previous.getTime() === value.getTime()) return true;
+			if (isSame(previous, value)) return true;
 
 			target[key] = value;
 
