@@ -64,9 +64,10 @@ export const makeObservable = observable;
 
 export function reaction(listener: Function, callback: (newValue: any) => void) {
 	effect = callback;
-	listener();
-	const observables = [...trackedObservables];
 	trackedObservables.clear();
+	listener();
+	effect = undefined;
+	const observables = [...trackedObservables];
 
 	// dispose
 	return () => {
@@ -109,7 +110,6 @@ export function notify(observable: Observable) {
 export function notifyAll() {
 	actions.forEach((x) => notify(x));
 	actions.clear();
-	isInAction = false;
 }
 
 export function runInAction(fn: Function) {
@@ -122,6 +122,7 @@ export function runInAction(fn: Function) {
 	} catch (e) {
 		error = e;
 	}
+	isInAction = false;
 
 	if (result instanceof Promise) return result.finally(notifyAll);
 
