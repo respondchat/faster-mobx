@@ -1,88 +1,138 @@
 import { actions, effect, isInAction, Key, notify, trackedObservables } from "./observable";
 
-export class ObservableMap<K, V> extends Map<K, V> {
+export class ObservableMap<K, V> {
 	subscriptions: any[] = [];
 	target = this;
-	changed = {} as Record<Key, any>;
+	changed = [] as Key[];
+	subscribed = false;
+	cache = new Map<K, V>();
 
-	override set(key: K, value: V) {
-		const previous = super.get(key);
+	constructor(map?: Map<K, V>) {
+		this.cache = map || new Map();
+	}
+
+	set(key: K, value: V) {
+		const previous = this.cache.get(key);
 		if (previous === value) return this;
-		super.set(key, value);
+		this.cache.set(key, value);
 
-		this.changed[key as Key] = value;
+		this.changed.push(key as Key);
 		if (isInAction) actions.add(this);
 		else notify(this);
 
 		return this;
 	}
 
-	override has(key: K) {
+	has(key: K) {
 		if (effect) {
 			this.subscriptions.push({ effect, key });
 			trackedObservables.add(this);
 		}
 
-		return super.has(key);
+		return this.cache.has(key);
 	}
 
-	override get(key: K) {
+	get(key: K) {
 		if (effect) {
 			this.subscriptions.push({ effect, key });
 			trackedObservables.add(this);
 		}
 
-		return super.get(key);
+		return this.cache.get(key);
 	}
 
-	override get size() {
+	get size() {
 		this.subscribe();
-		return super.size;
+		return this.cache.size;
 	}
 
 	subscribe() {
 		if (!effect) return;
 		this.subscriptions.push({ effect });
 		trackedObservables.add(this);
+		this.subscribed = true;
 	}
 
-	override values() {
+	values() {
 		this.subscribe();
-		return super.values();
+		return this.cache.values();
 	}
 
-	override entries() {
+	entries() {
 		this.subscribe();
-		return super.entries();
+		return this.cache.entries();
 	}
 
-	override keys() {
+	keys() {
 		this.subscribe();
-		return super.keys();
+		return this.cache.keys();
 	}
 
-	override [Symbol.iterator]() {
+	[Symbol.iterator]() {
 		this.subscribe();
-		return super[Symbol.iterator]();
+		return this.cache[Symbol.iterator]();
 	}
 
-	override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any) {
+	forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any) {
 		this.subscribe();
-		return super.forEach(callbackfn, thisArg);
+		return this.cache.forEach(callbackfn, thisArg);
 	}
 
-	override clear() {
-		super.clear();
+	clear() {
+		this.cache.clear();
 		if (isInAction) actions.add(this);
 		else notify(this);
 	}
 
-	override delete(key: K) {
-		const deleted = super.delete(key);
+	delete(key: K) {
+		const deleted = this.cache.delete(key);
 		if (!deleted) return false;
-		this.changed[key as Key] = null;
+		this.changed.push(key as Key);
 		if (isInAction) actions.add(this);
 		else notify(this);
 		return true;
+	}
+
+	first(): V | undefined {
+		return this.values().next().value;
+	}
+
+	last(): V | undefined {
+		const arr = [...this.values()];
+		return arr[arr.length - 1];
+	}
+
+	find(fn: (value: V, key: K, collection: this) => unknown): V | undefined {
+		for (const [key, val] of this) {
+			if (fn(val, key, this)) return val;
+		}
+
+		return undefined;
+	}
+
+	map<T>(fn: (value: V, key: K, collection: this) => T): T[] {
+		const iter = this.entries();
+		return Array.from({ length: this.cache.size }, (): T => {
+			const [key, value] = iter.next().value;
+			return fn(value, key, this);
+		});
+	}
+
+	filter(fn: (value: V, key: K, collection: this) => unknown): V[] {
+		const arr = [];
+		for (const [key, val] of this) {
+			if (fn(val, key, this)) arr.push(val);
+		}
+		return arr;
+	}
+
+	reduce<T>(fn: (accumulator: T, value: V, key: K, collection: this) => T, initialValue: T): T | undefined {
+		let accumulator = initialValue;
+		for (const [key, val] of this) accumulator = fn(accumulator, val, key, this);
+		return accumulator;
+	}
+
+	array() {
+		return Array.from(this.values());
 	}
 }

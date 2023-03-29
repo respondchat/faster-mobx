@@ -15,7 +15,8 @@ export type Key = string | symbol;
 export type Observable = {
 	subscriptions: Subscription[];
 	target?: object;
-	changed: Record<Key, any>;
+	changed: Key[];
+	subscribed: boolean;
 };
 
 export type Subscription = {
@@ -29,15 +30,23 @@ export function observable<T extends object>(target: T): T & { subscribe: Functi
 	const o = {
 		subscriptions: [],
 		target,
-		changed: {} as Record<Key, any>,
+		changed: [] as Key[],
+		subscribed: false,
 	} as Observable;
 
 	// do not use Reflect as it is slower than direct assignment
 	return new Proxy(target, {
 		get(target: any, key: any) {
-			if (effect) {
+			if (effect && !o.subscribed) {
 				// return a special function to subscribe to the observable
-				if (key === subscribeKey) return () => o.subscriptions.push({ effect: effect!, listener });
+				if (key === subscribeKey) {
+					return () => {
+						o.subscriptions.push({ effect: effect!, listener });
+						trackedObservables.add(o);
+						// skip all other key subscriptions, because .subscribe() subscribes to all keys
+						o.subscribed = true;
+					};
+				}
 				o.subscriptions.push({ effect, key, listener });
 				trackedObservables.add(o);
 			}
@@ -51,7 +60,7 @@ export function observable<T extends object>(target: T): T & { subscribe: Functi
 
 			target[key] = value;
 
-			o.changed[key] = value;
+			o.changed.push(key);
 			if (isInAction) actions.add(o);
 			else notify(o);
 
@@ -69,6 +78,10 @@ export function reaction(listener: Function, callback: (newValue: any) => void) 
 	effect = undefined;
 	const observables = [...trackedObservables];
 
+	observables.forEach((observable) => {
+		observable.subscribed = false;
+	});
+
 	// dispose
 	return () => {
 		observables.forEach((observable) => {
@@ -82,28 +95,25 @@ export function autorun(callback: () => void) {
 }
 
 const notifyEffects = new Set<Function>();
-const changed = new Set();
 
 export function notify(observable: Observable) {
 	if (!observable.subscriptions.length) return;
 	// notifyEffects prevents effects from being called multiple times
 	let error: any;
 	notifyEffects.clear();
-	changed.clear();
-	Object.keys(observable.changed).forEach(changed.add, changed);
 
 	observable.subscriptions.forEach((subscription) => {
-		if (subscription.key && !changed.has(subscription.key as any)) return;
+		if (subscription.key && !observable.changed.includes(subscription.key)) return;
 		if (notifyEffects.has(subscription.effect)) return;
 		notifyEffects.add(subscription.effect);
 
 		try {
-			return subscription.effect(observable.changed[subscription.key!] ?? observable.target);
+			return subscription.effect(observable.target);
 		} catch (e) {
 			error = e;
 		}
 	});
-	observable.changed = {};
+	observable.changed = [];
 	if (error) throw error;
 }
 
