@@ -1,30 +1,36 @@
-// @ts-nocheck
-import { ReactElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { reaction } from "./observable";
 
+function Observer(this: any, component: any, props: any) {
+	let result = useRef<any>();
+	let dispose = useRef<any>();
+	const forceUpdate = useState(0)[1];
+
+	if (dispose.current) dispose.current();
+
+	dispose.current = reaction(
+		() => {
+			result.current = component(props);
+		},
+		() => {
+			forceUpdate((x) => x + 1);
+		}
+	);
+
+	useEffect(() => {
+		return () => {
+			dispose?.current();
+		};
+	}, []);
+
+	return result.current;
+}
+
 export function observer<T extends (...props: any[]) => JSX.Element>(component: T) {
-	return function observer(props: any) {
-		let result = useRef<any>();
-		let dispose = useRef<any>();
-		const forceUpdate = useState(0)[1];
+	const func = Observer.bind(null, component);
 
-		if (dispose.current) dispose.current();
+	// @ts-ignore
+	Object.defineProperty(func, "name", { value: component.displayName || component.name });
 
-		dispose.current = reaction(
-			() => {
-				result.current = component(props);
-			},
-			() => {
-				forceUpdate((x) => x + 1);
-			}
-		);
-
-		useEffect(() => {
-			return () => {
-				dispose?.current();
-			};
-		}, []);
-
-		return result.current as ReactElement;
-	} as T;
+	return func as T;
 }
