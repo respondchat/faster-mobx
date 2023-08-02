@@ -118,8 +118,10 @@ export function notify(observable: Observable) {
 }
 
 export function notifyAll() {
-	actions.forEach((x) => notify(x));
-	actions.clear();
+	setImmediate(() => {
+		actions.forEach((x) => notify(x));
+		actions.clear();
+	});
 }
 
 export function runInAction(fn: Function) {
@@ -139,4 +141,6 @@ export function runInAction(fn: Function) {
 	notifyAll();
 
 	if (error) throw error;
+
+	return result;
 }
