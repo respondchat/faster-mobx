@@ -1,4 +1,5 @@
 import { actions, effect, isInAction, Key, notify, trackedObservables } from "./observable";
+import { isSame } from "./util";
 
 export class ObservableMap<K, V> {
 	subscriptions: any[] = [];
@@ -14,6 +15,7 @@ export class ObservableMap<K, V> {
 	set(key: K, value: V) {
 		const previous = this.cache.get(key);
 		if (previous === value) return this;
+		if (isSame(previous, value)) return this;
 		this.cache.set(key, value);
 
 		this.changed.push(key as Key);
@@ -24,7 +26,7 @@ export class ObservableMap<K, V> {
 	}
 
 	has(key: K) {
-		if (effect) {
+		if (effect && !this.subscribed) {
 			this.subscriptions.push({ effect, key });
 			trackedObservables.add(this);
 		}
@@ -33,7 +35,7 @@ export class ObservableMap<K, V> {
 	}
 
 	get(key: K) {
-		if (effect) {
+		if (effect && !this.subscribed) {
 			this.subscriptions.push({ effect, key });
 			trackedObservables.add(this);
 		}
@@ -47,7 +49,7 @@ export class ObservableMap<K, V> {
 	}
 
 	subscribe() {
-		if (!effect) return;
+		if (!effect || this.subscribed) return;
 		this.subscriptions.push({ effect });
 		trackedObservables.add(this);
 		this.subscribed = true;
@@ -126,7 +128,7 @@ export class ObservableMap<K, V> {
 		return arr;
 	}
 
-	reduce<T>(fn: (accumulator: T, value: V, key: K, collection: this) => T, initialValue: T): T | undefined {
+	reduce<T>(fn: (accumulator: T, value: V, key: K, collection: this) => T, initialValue: T): T {
 		let accumulator = initialValue;
 		for (const [key, val] of this) accumulator = fn(accumulator, val, key, this);
 		return accumulator;
