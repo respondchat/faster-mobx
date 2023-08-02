@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+// @ts-nocheck
+var React = {} as typeof import("react")
+try {
+	React = require("react")
+} catch (error) { }
 import { reaction } from "./observable";
 
 function Observer(this: any, component: any, props: any) {
-	let result = useRef<any>();
-	let dispose = useRef<any>();
-	const forceUpdate = useState(0)[1];
+	let result = React.useRef<any>();
+	let dispose = React.useRef<any>();
+	const forceUpdate = React.useState(0)[1];
 
 	if (dispose.current) dispose.current();
 
@@ -17,7 +21,7 @@ function Observer(this: any, component: any, props: any) {
 		}
 	);
 
-	useEffect(() => {
+	React.useEffect(() => {
 		return () => {
 			dispose?.current();
 		};
