@@ -3,52 +3,32 @@ import { isSame } from "./util";
 
 export const ObservableSymbol = Symbol.for("observable");
 
+export type Effect = (value: any) => void;
+export type ObservObject = any;
+/** Object that contains all unique effects for a specific key */
+export type InternalObservable = Record<Key, Set<Effect>>;
 export let listener: Function | undefined;
-export let effect: Function | undefined;
+export let effect: Effect | undefined;
 export let isInAction = false;
-export let actions = new Set<Observable>();
-export let trackedObservables = new Set<Observable>();
+/** map that contains all changed observables and their effects */
+export const changed = new Map<Effect, { target: ObservObject; effects: Effect[] }>();
+export const subscribed = new Map<Effect, ObservObject>();
 export const subscribeKey = "subscribe";
+/** set that contains all effects where the whole object is subscribed */
 
 export type Key = string | symbol;
 
-export type Observable = {
-	subscriptions: Subscription[];
-	target?: object;
-	changed: Key[];
-	subscribed: boolean;
-};
-
-export type Subscription = {
-	effect: Function;
-	key?: Key;
-	listener?: Function;
-};
-
-export function observable<T extends object>(target: T): T & { subscribe: Function } {
+export function observable<T extends object>(target: T): T & { subscribe: void } {
 	if (target instanceof Map) return new ObservableMap(target) as any;
-	const o = {
-		subscriptions: [],
-		target,
-		changed: [] as Key[],
-		subscribed: false,
-	} as Observable;
+	const effects = [] as Effect[];
 
 	// do not use Reflect as it is slower than direct assignment
 	return new Proxy(target, {
 		get(target: any, key: any) {
-			if (effect && !o.subscribed) {
-				// return a special function to subscribe to the observable
-				if (key === subscribeKey) {
-					return () => {
-						o.subscriptions.push({ effect: effect!, listener });
-						trackedObservables.add(o);
-						// skip all other key subscriptions, because .subscribe() subscribes to all keys
-						o.subscribed = true;
-					};
-				}
-				o.subscriptions.push({ effect, key, listener });
-				trackedObservables.add(o);
+			if (effect) {
+				if (subscribed.has(effect)) return target[key];
+				subscribed.set(effect, target);
+				effects.push(effect);
 			}
 
 			return target[key];
@@ -60,9 +40,10 @@ export function observable<T extends object>(target: T): T & { subscribe: Functi
 
 			target[key] = value;
 
-			o.changed.push(key);
-			if (isInAction) actions.add(o);
-			else notify(o);
+			effects.forEach((effect) => {
+				changed.set(effect, { target, effects });
+				if (!isInAction) effect(this);
+			});
 
 			return true;
 		},
@@ -73,20 +54,18 @@ export const makeObservable = observable;
 
 export function reaction(listener: Function, callback: (newValue: any) => void) {
 	effect = callback;
-	trackedObservables.clear();
 	listener();
 	effect = undefined;
-	const observables = [...trackedObservables];
-
-	observables.forEach((observable) => {
-		observable.subscribed = false;
-	});
 
 	// dispose
 	return () => {
-		observables.forEach((observable) => {
-			observable.subscriptions = observable.subscriptions.filter((subscription: any) => subscription.effect !== callback);
-		});
+		const entry = changed.get(callback);
+		if (entry) {
+			const index = entry.effects.indexOf(callback);
+			if (index !== -1) entry.effects.splice(index, 1);
+		}
+		changed.delete(callback);
+		subscribed.delete(callback);
 	};
 }
 
@@ -94,33 +73,12 @@ export function autorun(callback: () => void) {
 	return reaction(callback, callback);
 }
 
-const notifyEffects = new Set<Function>();
-
-export function notify(observable: Observable) {
-	if (!observable.subscriptions.length) return;
-	// notifyEffects prevents effects from being called multiple times
-	let error: any;
-	notifyEffects.clear();
-
-	observable.subscriptions.forEach((subscription) => {
-		if (subscription.key && !observable.changed.includes(subscription.key)) return;
-		if (notifyEffects.has(subscription.effect)) return;
-		notifyEffects.add(subscription.effect);
-
-		try {
-			return subscription.effect(observable.target);
-		} catch (e) {
-			error = e;
-		}
-	});
-	observable.changed = [];
-	if (error) throw error;
-}
-
 export function notifyAll() {
 	setImmediate(() => {
-		actions.forEach((x) => notify(x));
-		actions.clear();
+		changed.forEach((value, effect) => {
+			effect(value.target);
+		});
+		changed.clear();
 	});
 }
 

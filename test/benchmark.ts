@@ -1,6 +1,11 @@
 import * as mobx from "mobx";
 import benchmark from "benchmark";
 import { autorun, observable } from "../src/observable";
+import Benchmark from "benchmark";
+
+const opts = {
+	maxTime: 1,
+} as Benchmark.Options;
 
 const suite = new benchmark.Suite();
 
@@ -174,25 +179,50 @@ const test = {
 };
 
 suite
-
-	.add("Faster set", function () {
-		x.a = i;
-	})
-	.add("Faster observable", function () {
-		return observable({});
-	})
-	.add("Faster makeObservable (1 property)", function () {
-		new ObservableClass1();
-	})
-	.add("Faster makeObservable (26 properties)", function () {
-		new ObservableClass1();
-	})
-	.add("Faster autorun", () => {
-		autorun(() => x.a)();
-	})
-	.add("Faster get", function () {
-		x.a;
-	});
+	.add(
+		"Faster set",
+		function () {
+			x.a = i;
+		},
+		opts
+	)
+	.add(
+		"Faster observable",
+		function () {
+			return observable({});
+		},
+		opts
+	)
+	.add(
+		"Faster makeObservable (1 property)",
+		function () {
+			new ObservableClass1();
+		},
+		opts
+	)
+	.add(
+		"Faster makeObservable (26 properties)",
+		function () {
+			new ObservableClass1();
+		},
+		opts
+	)
+	.add(
+		"Faster autorun",
+		() => {
+			autorun(() => {
+				x.a;
+			})();
+		},
+		opts
+	)
+	.add(
+		"Faster get",
+		function () {
+			x.a;
+		},
+		opts
+	);
 
 suite
 	.on("cycle", function (event: any) {

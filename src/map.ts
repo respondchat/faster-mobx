@@ -1,15 +1,24 @@
-import { actions, effect, isInAction, Key, notify, trackedObservables } from "./observable";
+import { effect, isInAction, Key, changed, Effect, InternalObservable, subscribeKey, subscribed } from "./observable";
 import { isSame } from "./util";
 
-export class ObservableMap<K, V> {
-	subscriptions: any[] = [];
-	target = this;
-	changed = [] as Key[];
-	subscribed = false;
+export class ObservableMap<K extends Key, V> {
 	cache = new Map<K, V>();
+	effects = [] as Effect[];
 
 	constructor(map?: Map<K, V>) {
 		this.cache = map || new Map();
+	}
+
+	has(key: K) {
+		this.subscribe;
+
+		return this.cache.has(key);
+	}
+
+	get(key: K) {
+		this.subscribe;
+
+		return this.cache.get(key);
 	}
 
 	set(key: K, value: V) {
@@ -18,80 +27,63 @@ export class ObservableMap<K, V> {
 		if (isSame(previous, value)) return this;
 		this.cache.set(key, value);
 
-		this.changed.push(key as Key);
-		if (isInAction) actions.add(this);
-		else notify(this);
+		this.effects.forEach((effect) => {
+			changed.set(effect, { target: this, effects: this.effects });
+			if (!isInAction) effect(this);
+		});
 
 		return this;
 	}
 
-	has(key: K) {
-		if (effect && !this.subscribed) {
-			this.subscriptions.push({ effect, key });
-			trackedObservables.add(this);
-		}
-
-		return this.cache.has(key);
-	}
-
-	get(key: K) {
-		if (effect && !this.subscribed) {
-			this.subscriptions.push({ effect, key });
-			trackedObservables.add(this);
-		}
-
-		return this.cache.get(key);
-	}
-
 	get size() {
-		this.subscribe();
+		this.subscribe;
 		return this.cache.size;
 	}
 
-	subscribe() {
-		if (!effect || this.subscribed) return;
-		this.subscriptions.push({ effect });
-		trackedObservables.add(this);
-		this.subscribed = true;
+	get subscribe() {
+		if (!effect || subscribed.has(effect)) return;
+
+		this.effects.push(effect);
+		subscribed.set(effect, this);
 	}
 
 	values() {
-		this.subscribe();
+		this.subscribe;
 		return this.cache.values();
 	}
 
 	entries() {
-		this.subscribe();
+		this.subscribe;
 		return this.cache.entries();
 	}
 
 	keys() {
-		this.subscribe();
+		this.subscribe;
 		return this.cache.keys();
 	}
 
 	[Symbol.iterator]() {
-		this.subscribe();
+		this.subscribe;
 		return this.cache[Symbol.iterator]();
 	}
 
 	forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any) {
-		this.subscribe();
+		this.subscribe;
 		return this.cache.forEach(callbackfn, thisArg);
 	}
 
 	clear() {
 		this.cache.clear();
-		if (isInAction) actions.add(this);
-		else notify(this);
+
+		this.subscribe;
 	}
 
 	delete(key: K) {
 		const deleted = this.cache.delete(key);
 		if (!deleted) return false;
-		this.changed.push(key as Key);
-		if (isInAction) actions.add(this);
-		else notify(this);
+
+		this.subscribe;
+
 		return true;
 	}
 
@@ -100,8 +92,11 @@ export class ObservableMap<K, V> {
 	}
 
 	last(): V | undefined {
-		const arr = [...this.values()];
-		return arr[arr.length - 1];
+		let lastValue;
+		for (const value of this.values()) {
+			lastValue = value;
+		}
+		return lastValue;
 	}
 
 	find(fn: (value: V, key: K, collection: this) => unknown): V | undefined {

@@ -16,7 +16,9 @@ class SubTest extends Test {
 const test = new SubTest();
 
 autorun(() => {
-	console.log(test.x, test.y);
+	console.log({
+		...test,
+	});
 });
 
 test.x = 2;
@@ -25,13 +27,12 @@ test.y = 3;
 const map = new ObservableMap();
 
 autorun(() => {
-	map.get("a");
-	console.log("map a changed");
+	console.log("map a changed", map.get("a"));
 });
 
 autorun(() => {
-	map.subscribe();
-	console.log("map changed");
+	map.subscribe;
+	console.log("map changed", map.entries());
 });
 
 map.set("a", 1);
@@ -45,7 +46,7 @@ const obj = observable({
 autorun(() => {
 	obj.a;
 	obj.b;
-	console.log("obj changed");
+	console.log("obj changed", obj);
 });
 
 obj.a = 2;
