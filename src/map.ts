@@ -27,10 +27,19 @@ export class ObservableMap<K extends Key, V> {
 		if (isSame(previous, value)) return this;
 		this.cache.set(key, value);
 
-		this.effects.forEach((effect) => {
-			changed.set(effect, { target: this, effects: this.effects });
-			if (!isInAction) effect(this);
-		});
+		if (isInAction) {
+			this.effects.forEach((effect) => {
+				changed.set(effect, { target: this, effects: this.effects, key, value });
+			});
+		} else {
+			setImmediate(() => {
+				// see observable.ts for explanation
+				const e = [...this.effects];
+				e.forEach((effect) => {
+					effect({ target: this, effects: this.effects, key, value });
+				});
+			});
+		}
 
 		return this;
 	}
@@ -44,7 +53,10 @@ export class ObservableMap<K extends Key, V> {
 		if (!effect || subscribed.has(effect)) return;
 
 		this.effects.push(effect);
-		subscribed.set(effect, this);
+		subscribed.set(effect, {
+			target: this,
+			effects: this.effects,
+		}); // @ts-ignore
 	}
 
 	values() {

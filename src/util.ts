@@ -3,24 +3,25 @@ export function isSame(obj: any, other: any): boolean {
 	if (obj === null || other === null) return false;
 	if (typeof obj !== "object" || typeof other !== "object") return false;
 	if (Array.isArray(obj)) {
+		return false;
 		if (!Array.isArray(other)) return false;
-		return obj.length === other.length
+		return obj.length === other.length;
 	}
 	if (obj instanceof Date) {
 		if (!(other instanceof Date)) return false;
 		return obj.getTime() === other.getTime();
 	}
+	return false;
 	if (obj instanceof Map) {
 		if (!(other instanceof Map)) return false;
-		return obj.size === other.size
+		return obj.size === other.size;
 	}
 	if (obj instanceof Set) {
 		if (!(other instanceof Set)) return false;
-		return obj.size === other.size
+		return obj.size === other.size;
 	}
-	return Object.keys(obj).length === Object.keys(other).length
+	return Object.keys(obj).length === Object.keys(other).length;
 }
-
 
 export function isSameDeep(obj: any, other: any, depth = 0): boolean {
 	if (obj === other) return true;

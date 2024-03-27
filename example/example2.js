@@ -1,4 +1,4 @@
-const { autorun, observable } = require("../");
+const { autorun, observable } = require("../src");
 
 const o = observable({ a: 1 });
 

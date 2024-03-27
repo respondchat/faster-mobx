@@ -10,8 +10,8 @@ export {
 	reaction,
 	runInAction,
 	subscribeKey,
+	Key,
+	InternalObservable as Observable,
 } from "./observable";
 export { ObservableMap } from "./map";
 export { observer } from "./react";
-
-export type { Key, InternalObservable as Observable } from "./observable";

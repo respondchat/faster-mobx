@@ -1,6 +1,6 @@
 {
 	"include": ["src/**/*.ts"],
-	"exclude": ["react", "test"],
+	"exclude": ["react", "example"],
 	"compilerOptions": {
 		/* Visit https://aka.ms/tsconfig to read more about this file */
 

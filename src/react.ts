@@ -1,8 +1,8 @@
 // @ts-nocheck
-var React = {} as typeof import("react")
+var React = {} as typeof import("react");
 try {
-	React = require("react")
-} catch (error) { }
+	React = require("react");
+} catch (error) {}
 import { reaction } from "./observable";
 
 function Observer(this: any, component: any, props: any) {
@@ -12,14 +12,15 @@ function Observer(this: any, component: any, props: any) {
 
 	if (dispose.current) dispose.current();
 
-	dispose.current = reaction(
-		() => {
-			result.current = component(props);
-		},
-		() => {
-			forceUpdate((x) => x + 1);
-		}
-	);
+	let onUpdate = (reason: any) => {
+		console.log("update", reason, component.displayName || component.name);
+		forceUpdate((x) => x + 1);
+	};
+	onUpdate.displayName = component.displayName || component.name;
+
+	dispose.current = reaction(() => {
+		result.current = component(props);
+	}, onUpdate);
 
 	React.useEffect(() => {
 		return () => {
