@@ -1,58 +1,73 @@
-// import { ObservableMap } from "./map";
 import { isSame } from "./util";
 
 export const ObservableSymbol = Symbol.for("observable");
 
 export type Effect = (value: any) => void;
+export type Effects = Map<Key, Set<Effect>>;
 export type ObservObject = any;
-/** Object that contains all unique effects for a specific key */
-export type InternalObservable = Record<Key, Set<Effect>>;
 export let listener: Function | undefined;
 export let effect: Effect | undefined;
 export let isInAction = false;
 /** map that contains all changed observables and their effects */
-export const changed = new Map<Effect, { target: ObservObject; effects: Effect[]; key?: any; value?: any }>();
+export const changed = new Map<Set<Effect>, Reason>();
 /** set that contains all effects where the whole object is subscribed */
-export const subscribed = new Map<Effect, { target: ObservObject; effects: Effect[] }>();
+export const subscribed = new Map<Effect, Set<Effects>>();
 export const subscribeKey = "subscribe";
+
+export type Reason = { target: ObservObject; effects: Effects; key?: any; value?: any; previous?: any };
 
 export type Key = string | symbol;
 
+export function triggerValueSet(effects: Effects, target: any, key: any, value: any, previous: any) {
+	const reason = { target, effects, key, value, previous };
+
+	if (isInAction) {
+		let set = effects.get(subscribeKey);
+		if (set) changed.set(set, { target, effects, key, value, previous });
+
+		set = effects.get(key);
+		if (set) changed.set(set, reason);
+	} else {
+		// copy is needed, because effect could cause a clean up in reaction, which would modify the array while iterating resulting in missing effects
+
+		let iterator = effects.get(subscribeKey);
+		if (iterator) {
+			[...iterator].forEach((effect) => effect(reason));
+		}
+		iterator = effects.get(key);
+		if (iterator) {
+			[...iterator].forEach((effect) => effect(reason));
+		}
+
+		effects.delete(key);
+		effects.delete(subscribeKey);
+	}
+}
+
 export function observable<T extends object>(target: T): T & { subscribe: void } {
 	// if (target instanceof Map) return new ObservableMap(target) as any;
-	const effects = [] as Effect[];
+	const effects = new Map() as Effects;
 
 	// do not use Reflect as it is slower than direct assignment
 	return new Proxy(target, {
 		get(target: any, key: any) {
 			if (effect) {
-				if (subscribed.has(effect)) return target[key];
-				subscribed.set(effect, { target, effects });
-				effects.push(effect); // @ts-ignore
+				var set = effects.get(key);
+				if (!set) effects.set(key, (set = new Set()));
+				set.add(effect);
+
+				subscribed.get(effect)!.add(effects);
 			}
 
 			return target[key];
 		},
 		set(target: any, key: any, value: any) {
 			const previous = target[key];
-			if (previous === value) return true; // don't notify if value is the same
-			if (isSame(previous, value)) return true;
+			if (isSame(previous, value)) return true; // don't notify if value is the same
 
 			target[key] = value;
 
-			if (isInAction) {
-				effects.forEach((effect) => {
-					changed.set(effect, { target, effects, key, value });
-				});
-			} else {
-				setImmediate(() => {
-					// copy is needed, because effect could cause a clean up in reaction, which would modify the array while iterating resulting in missing effects
-					let e = [...effects];
-					e.forEach((effect) => {
-						effect({ target, key, value, effects });
-					});
-				});
-			}
+			triggerValueSet(effects, target, key, value, previous);
 
 			return true;
 		},
@@ -62,19 +77,26 @@ export function observable<T extends object>(target: T): T & { subscribe: void }
 export const makeObservable = observable;
 
 export function reaction(listener: Function, callback: (newValue: any) => void) {
+	if (!subscribed.has(callback)) subscribed.set(callback, new Set());
+
+	let previousEffect = effect;
 	effect = callback;
 	listener();
-	effect = undefined;
+	effect = previousEffect;
 
 	// dispose
 	return () => {
-		const entry = subscribed.get(callback);
-		if (entry) {
-			const index = entry.effects.indexOf(callback);
-			if (index !== -1) entry.effects.splice(index, 1);
-		}
-		changed.delete(callback);
+		const sets = subscribed.get(callback);
+		sets?.forEach((set) => {
+			set.forEach((effects, key) => {
+				effects.delete(callback);
+				if (effects.size === 0) set.delete(key);
+			});
+		});
 		subscribed.delete(callback);
+		changed.forEach((reason, set) => {
+			set.delete(callback);
+		});
 	};
 }
 
@@ -83,9 +105,11 @@ export function autorun(callback: () => void) {
 }
 
 export function notifyAll() {
-	setImmediate(() => {
-		changed.forEach((value, effect) => {
-			effect(value);
+	setTimeout(() => {
+		changed.forEach((reason, effects) => {
+			[...effects].forEach((effect) => {
+				effect(reason);
+			});
 		});
 		changed.clear();
 	});

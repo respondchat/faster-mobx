@@ -182,7 +182,7 @@ suite
 	.add(
 		"Faster set",
 		function () {
-			x.a = i;
+			x.a = i++;
 		},
 		opts
 	)

@@ -1,26 +1,27 @@
 export function isSame(obj: any, other: any): boolean {
-	if (obj === other) return true;
-	if (obj === null || other === null) return false;
+	if (obj == other) return true;
+	if (obj == null || other == null) return false;
 	if (typeof obj !== "object" || typeof other !== "object") return false;
-	if (Array.isArray(obj)) {
-		return false;
-		if (!Array.isArray(other)) return false;
-		return obj.length === other.length;
-	}
 	if (obj instanceof Date) {
 		if (!(other instanceof Date)) return false;
 		return obj.getTime() === other.getTime();
 	}
-	return false;
+	if (Array.isArray(obj)) {
+		if (!Array.isArray(other)) return false;
+		if (obj.length !== other.length) return false;
+		return obj.every((x, i) => isSame(x, other[i]));
+	}
 	if (obj instanceof Map) {
+		return false;
 		if (!(other instanceof Map)) return false;
 		return obj.size === other.size;
 	}
 	if (obj instanceof Set) {
+		return false;
 		if (!(other instanceof Set)) return false;
 		return obj.size === other.size;
 	}
-	return Object.keys(obj).length === Object.keys(other).length;
+	return Object.entries(obj).every(([key, value]) => isSame(value, other[key]));
 }
 
 export function isSameDeep(obj: any, other: any, depth = 0): boolean {
