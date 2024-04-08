@@ -38,9 +38,6 @@ export function triggerValueSet(effects: Effects, target: any, key: any, value: 
 		if (iterator) {
 			[...iterator].forEach((effect) => effect(reason));
 		}
-
-		effects.delete(key);
-		effects.delete(subscribeKey);
 	}
 }
 

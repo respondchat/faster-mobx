@@ -21,7 +21,8 @@ export function isSame(obj: any, other: any): boolean {
 		if (!(other instanceof Set)) return false;
 		return obj.size === other.size;
 	}
-	return Object.entries(obj).every(([key, value]) => isSame(value, other[key]));
+	// no deep comparison for objects, because observable objects are shallow
+	return Object.entries(obj).every(([key, value]) => value == other[key]);
 }
 
 export function isSameDeep(obj: any, other: any, depth = 0): boolean {
