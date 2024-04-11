@@ -23,7 +23,7 @@ export function triggerValueSet(effects: Effects, target: any, key: any, value: 
 
 	if (isInAction) {
 		let set = effects.get(subscribeKey);
-		if (set) changed.set(set, { target, effects, key, value, previous });
+		if (set) changed.set(set, reason);
 
 		set = effects.get(key);
 		if (set) changed.set(set, reason);
@@ -60,9 +60,9 @@ export function observable<T extends object>(target: T): T & { subscribe: void }
 		},
 		set(target: any, key: any, value: any) {
 			const previous = target[key];
-			if (isSame(previous, value)) return true; // don't notify if value is the same
-
 			target[key] = value;
+
+			if (isSame(previous, value)) return true; // don't notify if value is the same
 
 			triggerValueSet(effects, target, key, value, previous);
 
@@ -101,10 +101,15 @@ export function autorun(callback: () => void) {
 	return reaction(callback, callback);
 }
 
+let called = new Set<Effect>();
+
 export function notifyAll() {
 	setTimeout(() => {
-		changed.forEach((reason, effects) => {
+		called.clear();
+		[...changed.entries()].forEach(([effects, reason]) => {
 			[...effects].forEach((effect) => {
+				if (called.has(effect)) return;
+				called.add(effect);
 				effect(reason);
 			});
 		});

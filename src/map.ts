@@ -83,8 +83,8 @@ export class ObservableMap<K extends Key, V> {
 
 	set(key: K, value: V) {
 		const previous = this.cache.get(key);
-		if (isSame(previous, value)) return this;
 		this.cache.set(key, value);
+		if (isSame(previous, value)) return this;
 
 		triggerValueSet(this.effects, this.cache, key, value, previous);
 
@@ -145,7 +145,7 @@ export class ObservableMap<K extends Key, V> {
 		const deleted = this.cache.delete(key);
 		if (!deleted) return false;
 
-		this.doSubscribe(subscribeKey);
+		triggerValueSet(this.effects, this.cache, key, true, "map.delete()");
 
 		return true;
 	}

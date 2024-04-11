@@ -14,12 +14,12 @@ function Observer(this: any, component: any, props: any) {
 	let dispose = React.useRef<any>();
 	const forceUpdate = React.useState(0)[1];
 
-	if (dispose.current) dispose.current();
-
-	let onUpdate = (reason: any) => {
+	let onUpdate = React.useCallback((reason: any) => {
+		if (dispose.current) dispose.current();
 		console.log("update", reason, component.displayName || component.name);
 		forceUpdate((x) => x + 1);
-	};
+	}, []);
+
 	onUpdate.displayName = component.displayName || component.name;
 
 	dispose.current = reaction(() => {

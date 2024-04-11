@@ -9,7 +9,7 @@ export function isSame(obj: any, other: any): boolean {
 	if (Array.isArray(obj)) {
 		if (!Array.isArray(other)) return false;
 		if (obj.length !== other.length) return false;
-		return obj.every((x, i) => isSame(x, other[i]));
+		return obj.every((x, i) => x == other[i]);
 	}
 	if (obj instanceof Map) {
 		return false;
