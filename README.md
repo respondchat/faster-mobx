@@ -70,12 +70,12 @@ Benchmark was done using [benchmark.js](https://benchmarkjs.com/) on a 3.20GHz C
 
 | Function                       |     Mobx     | Faster Mobx | Speedup |
 | ------------------------------ | :----------: | :---------: | :-----: |
-| observable                     | 570k ops/sec | 32M ops/sec |   56x   |
-| makeObservable (1 property)    | 750k ops/sec | 37M ops/sec |   50x   |
-| makeObservable (26 properties) | 54k ops/sec  | 30M ops/sec |  555x   |
-| autorun                        | 12M ops/sec  | 11M ops/sec |  0.9x   |
-| get                            | 23M ops/sec  | 54M ops/sec |  2.3x   |
-| set                            | 19M ops/sec  | 53M ops/sec |  2.8x   |
+| observable                     | 570k ops/sec | 33M ops/sec |   58x   |
+| makeObservable (1 property)    | 750k ops/sec | 33M ops/sec |   44x   |
+| makeObservable (26 properties) | 54k ops/sec  | 33M ops/sec |  611x   |
+| autorun                        | 12M ops/sec  | 6M ops/sec  |  0.5x   |
+| get                            | 23M ops/sec  | 55M ops/sec |  2.4x   |
+| set                            | 19M ops/sec  | 30M ops/sec |  1.6x   |
 
 You can run the benchmark yourself by cloning the repo and running the following commands:
 
