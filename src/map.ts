@@ -66,7 +66,7 @@ export class ObservableMap<K extends Key, V> {
 	effects = new Map() as Effects;
 
 	constructor(map?: Map<K, V>, useObject = false) {
-		this.cache = map || (useObject ? new MapObject() : new Map());
+		this.cache = map && map instanceof Map ? map : useObject ? new MapObject() : new Map(map);
 	}
 
 	has(key: K) {
@@ -101,13 +101,14 @@ export class ObservableMap<K extends Key, V> {
 	}
 
 	doSubscribe(key: any) {
-		if (!effect) return;
+		if (!effect) return this;
 
 		var set = this.effects.get(key);
 		if (!set) this.effects.set(key, (set = new Set()));
 		set.add(effect);
 
 		subscribed.get(effect)!.add(this.effects);
+		return this;
 	}
 
 	values() {

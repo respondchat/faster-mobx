@@ -5,6 +5,7 @@ export const ObservableSymbol = Symbol.for("observable");
 export type Effect = (value: any) => void;
 export type Effects = Map<Key, Set<Effect>>;
 export type ObservObject = any;
+export type Observable<T> = T & { subscribe: T };
 export let listener: Function | undefined;
 export let effect: Effect | undefined;
 export let isInAction = false;
@@ -41,7 +42,7 @@ export function triggerValueSet(effects: Effects, target: any, key: any, value: 
 	}
 }
 
-export function observable<T extends object>(target: T): T & { subscribe: void } {
+export function observable<T extends object>(target: T): T & { subscribe: T } {
 	// if (target instanceof Map) return new ObservableMap(target) as any;
 	const effects = new Map() as Effects;
 
@@ -50,11 +51,19 @@ export function observable<T extends object>(target: T): T & { subscribe: void }
 		get(target: any, key: any) {
 			if (effect) {
 				var set = effects.get(key);
-				if (!set) effects.set(key, (set = new Set()));
+				if (!set) {
+					set = new Set();
+					effects.set(key, set);
+				}
 				set.add(effect);
-
-				subscribed.get(effect)!.add(effects);
+				let sub = subscribed.get(effect);
+				if (!sub) {
+					sub = new Set();
+					subscribed.set(effect, sub);
+				}
+				sub.add(effects);
 			}
+			if (key === subscribeKey) return target;
 
 			return target[key];
 		},

@@ -9,7 +9,7 @@ test("reaction cleans up properly", () => {
 
 	let called = 0;
 
-	reaction(
+	const cleanup2 = reaction(
 		() => x.test,
 		(value) => {
 			called++;
@@ -36,6 +36,8 @@ test("reaction cleans up properly", () => {
 	x.test++;
 
 	expect(called).toBe(102);
+
+	cleanup2();
 });
 
 test("reaction cleans up properly in runInAction", async () => {
