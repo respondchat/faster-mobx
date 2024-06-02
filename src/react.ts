@@ -1,12 +1,8 @@
 // @ts-nocheck
 var React = {} as typeof import("react");
-import React2 from "react";
-try {
-	if (React2) React = React2;
-} catch (error) {}
 try {
 	React = require("react");
-} catch (error) {}
+} catch (error) { }
 import { reaction } from "./observable";
 
 function Observer(this: any, component: any, props: any) {
