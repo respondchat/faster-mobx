@@ -66,7 +66,7 @@ export class ObservableMap<K extends Key, V> {
 	effects = new Map() as Effects;
 
 	constructor(map?: Map<K, V>, useObject = false) {
-		this.cache = map && map instanceof Map ? map : useObject ? new MapObject() : new Map(map);
+		this.cache = map && map instanceof Map ? map : useObject ? (new MapObject() as any) : new Map(map);
 	}
 
 	has(key: K) {
