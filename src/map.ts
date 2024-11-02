@@ -6,6 +6,10 @@ export class MapObject<K extends string | symbol, V> {
 	cache = {} as any;
 	size = 0;
 
+	get value() {
+		return this.cache;
+	}
+
 	get(key: K) {
 		return this.cache[key];
 	}
@@ -67,6 +71,10 @@ export class ObservableMap<K extends Key, V> {
 
 	constructor(map?: Map<K, V>, useObject = false) {
 		this.cache = map && map instanceof Map ? map : useObject ? (new MapObject() as any) : new Map(map);
+	}
+
+	get value() {
+		return this.cache;
 	}
 
 	has(key: K) {
@@ -174,8 +182,9 @@ export class ObservableMap<K extends Key, V> {
 	map<T>(fn: (value: V, key: K, collection: this) => T): T[] {
 		const iter = this.entries();
 		return Array.from({ length: this.cache.size }, (): T => {
-			const [key, value] = iter.next().value;
-			return fn(value, key, this);
+			const result = iter.next().value;
+			if (!result) return undefined as any;
+			return fn(result[1], result[0], this);
 		});
 	}
 

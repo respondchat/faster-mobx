@@ -1,11 +1,11 @@
-import { isSame } from "./util";
+import { isSame, isSameDeep } from "./util";
 
 export const ObservableSymbol = Symbol.for("observable");
 
 export type Effect = (value: any) => void;
 export type Effects = Map<Key, Set<Effect>>;
 export type ObservObject = any;
-export type Observable<T> = T & { subscribe: T };
+export type Observable<T> = T & { subscribe: T; value: T };
 export let listener: Function | undefined;
 export let effect: Effect | undefined;
 export let isInAction = false;
@@ -14,6 +14,7 @@ export const changed = new Map<Set<Effect>, Reason>();
 /** set that contains all effects where the whole object is subscribed */
 export const subscribed = new Map<Effect, Set<Effects>>();
 export const subscribeKey = "subscribe";
+export const valueKey = "value";
 
 export type Reason = { target: ObservObject; effects: Effects; key?: any; value?: any; previous?: any };
 
@@ -49,6 +50,7 @@ export function observable<T extends object>(target: T): T & { subscribe: T } {
 	// do not use Reflect as it is slower than direct assignment
 	return new Proxy(target, {
 		get(target: any, key: any) {
+			if (key === valueKey) return target;
 			if (effect) {
 				var set = effects.get(key);
 				if (!set) {
@@ -71,7 +73,7 @@ export function observable<T extends object>(target: T): T & { subscribe: T } {
 			const previous = target[key];
 			target[key] = value;
 
-			if (isSame(previous, value)) return true; // don't notify if value is the same
+			if (isSameDeep(previous, value)) return true; // don't notify if value is the same
 
 			triggerValueSet(effects, target, key, value, previous);
 
@@ -125,22 +127,28 @@ export function notifyAll() {
 		changed.clear();
 	});
 }
+let actionDepth = 0;
 
-export function runInAction(fn: Function) {
-	// another action is already executing -> combine them into one action
-	if (isInAction) return fn();
-	isInAction = true;
+export async function runInAction(fn: Function) {
+	actionDepth++;
 	let error: any;
+	let result: any;
+
 	try {
-		var result = fn();
+		result = await fn();
 	} catch (e) {
 		error = e;
 	}
-	isInAction = false;
 
-	if (result instanceof Promise) return result.finally(notifyAll);
+	actionDepth--;
 
-	notifyAll();
+	if (actionDepth <= 0) {
+		actionDepth = 0;
+		if (result instanceof Promise) {
+			return result.finally(notifyAll);
+		}
+		notifyAll();
+	}
 
 	if (error) throw error;
 
