@@ -43,7 +43,7 @@ export function triggerValueSet(effects: Effects, target: any, key: any, value: 
 	}
 }
 
-export function observable<T extends object>(target: T): T & { subscribe: T } {
+export function observable<T extends object>(target: T): Observable<T> {
 	// if (target instanceof Map) return new ObservableMap(target) as any;
 	const effects = new Map() as Effects;
 
