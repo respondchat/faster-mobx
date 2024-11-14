@@ -79,12 +79,20 @@ export function observable<T extends object>(target: T): T & { subscribe: T } {
 
 			return true;
 		},
+		deleteProperty(target, p) {
+			const previous = target[p];
+			delete target[p];
+
+			triggerValueSet(effects, target, p, undefined, previous);
+
+			return true;
+		},
 	}) as any;
 }
 
 export const makeObservable = observable;
 
-export function reaction(listener: Function, callback: (newValue: any) => void) {
+export function reaction(listener: Function, callback: (reason: Reason) => void) {
 	if (!subscribed.has(callback)) subscribed.set(callback, new Set());
 
 	let previousEffect = effect;
@@ -108,7 +116,7 @@ export function reaction(listener: Function, callback: (newValue: any) => void) 
 	};
 }
 
-export function autorun(callback: () => void) {
+export function autorun(callback: (reason?: Reason) => void) {
 	return reaction(callback, callback);
 }
 

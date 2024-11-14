@@ -151,10 +151,11 @@ export class ObservableMap<K extends Key, V> {
 	}
 
 	delete(key: K) {
+		const previous = this.cache.get(key);
 		const deleted = this.cache.delete(key);
 		if (!deleted) return false;
 
-		triggerValueSet(this.effects, this.cache, key, true, "map.delete()");
+		triggerValueSet(this.effects, this.cache, key, undefined, previous);
 
 		return true;
 	}
