@@ -2,7 +2,7 @@
 var React = {} as typeof import("react");
 try {
 	React = require("react");
-} catch (error) { }
+} catch (error) {}
 import { reaction } from "./observable";
 
 function Observer(this: any, component: any, props: any) {
@@ -31,7 +31,7 @@ function Observer(this: any, component: any, props: any) {
 	return result.current;
 }
 
-export function observer<T extends (...props: any[]) => JSX.Element>(component: T) {
+export function observer<T extends (...props: any[]) => import("react").JSX.Element>(component: T) {
 	const func = Observer.bind(null, component);
 
 	// @ts-ignore

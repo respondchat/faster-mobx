@@ -3,7 +3,7 @@
 	"version": "1.0.17",
 	"main": "dist/index.js",
 	"license": "MIT",
-	"types": "src/index.ts",
+	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"benchmark": "nodemon test/benchmark.ts",
